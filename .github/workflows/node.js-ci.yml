@@ -1,0 +1,33 @@
+name: Apex CI
+
+on:
+  push:
+    branches: [ feature/**, dev/**, hotfix/**, develop, test/** ]
+
+jobs:
+  build-ci:
+
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [10.x, 12.x, 14.x]
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Cache node modules
+      uses: actions/cache@v1
+      with:
+        path: ~/.npm
+        key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+        restore-keys: |
+             ${{ runner.os }}-node-
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v1
+      with:
+        node-version: ${{ matrix.node-version }}
+    - run: npm install
+    - run: npm install -g @angular/cli@10.0.2
+    - run: ng test --watch=false
+    - run: ng e2e --port 4202
+    - run: ng build

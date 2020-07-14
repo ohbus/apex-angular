@@ -1,0 +1,50 @@
+name: Apex Master Builder
+
+on:
+  push:
+    branches: [ master ]
+
+jobs:
+  build-full:
+
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [10.x, 12.x, 14.x]
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Cache node modules
+      uses: actions/cache@v1
+      with:
+        path: ~/.npm
+        key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+        restore-keys: |
+             ${{ runner.os }}-node-
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v1
+      with:
+        node-version: ${{ matrix.node-version }}
+    - run: npm install
+    - run: npm install -g @angular/cli@10.0.2
+    - run: ng test --watch=false
+    - run: ng e2e --port 4202
+    - run: ng build
+
+
+  docker-build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Build and push Docker images
+      uses: docker/build-push-action@v1.1.0
+      with:
+        username: ${{ secrets.DOCKERHUB_UNAME }}
+        password: ${{ secrets.DOCKERHUB_PASSWD }}
+        registry: docker.io
+        repository: subhrodip/apex
+        tags: template
+        push: true
